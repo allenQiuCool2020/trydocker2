@@ -1,0 +1,31 @@
+services:
+  # Django + Gunicorn
+  app:
+    build: .
+    volumes:
+      - .:/django  # Mount the local code to the container
+      - ./gunicorn.conf.py:/gunicorn.conf.py  # Mount Gunicorn config
+      - ./logs:/var/log/gunicorn  # Mount local logs directory to container's log directory
+    expose:
+      - "8000"  # Expose Gunicorn's port to other services (not outside)
+    image: app:django
+    container_name: django-container
+    command: gunicorn -c /gunicorn.conf.py trydocker2.wsgi:application  # Use Gunicorn with config file
+
+  # NGINX reverse proxy
+  nginx:
+    image: nginx:latest
+    container_name: nginx-container
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf   # Mount custom NGINX config
+      - ./logs:/var/log/nginx  # Mount local logs directory to container's log directory
+      - ./staticfiles:/var/www/static  # Mount static files to /var/www/static inside the container
+      - ./media:/var/www/media        # Optionally, mount media files to /var/www/media
+
+    ports:
+      - "80:80"  # Expose NGINX on port 80
+
+    entrypoint: /bin/sh -c "mkdir -p /var/log/nginx /var/www/static /var/www/media && nginx -g 'daemon off;'"
+
+    depends_on:
+      - app  # Ensure the app container is up before starting NGINX

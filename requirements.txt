@@ -1,0 +1,4 @@
+django
+pytz
+psycopg2-binary
+gunicorn
